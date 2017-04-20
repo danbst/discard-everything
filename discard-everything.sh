@@ -26,7 +26,7 @@ if ! command -v fstrim >/dev/null 2>&1 ; then
 else
 	mount | while read dev on dir bla ; do
 		if [ -b "$dev" ] && [ $(blockdev  --getdiscardzeroes $dev) -eq 0 ]; then
-			fstrim "$dir"
+			time fstrim -v "$dir"
 		fi
 	done
 fi
@@ -42,13 +42,13 @@ else
 			echo "If it is just a leftover from a previous run then remove it with:" >&2
 			echo "lvm lvremove -f \"$vgdev\"" >&2
 		elif [ -b "$pvdev" ] && [ $(blockdev  --getdiscardzeroes "$pvdev") -eq 0 ] && [ "$free" -gt 0 ]; then
-			lvm lvcreate -l100%FREE -n discard "${vgname}" >/dev/null && blkdiscard "$vgdev"
+			lvm lvcreate -l100%FREE -n discard "${vgname}" && time blkdiscard "$vgdev"
 			# There are (or at least were) many bugs prohibiting a clean removal
 			# see http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=718582
 			# https://bugzilla.redhat.com/show_bug.cgi?id=715624 etc.
 			# The least invasive recovery strategy is just retrying a few times, so...
 			cnt=5
-			while [ $cnt -gt 0 ] && ! lvm lvremove -f "$vgdev" >/dev/null 2>&1 ; do
+			while [ $cnt -gt 0 ] && ! lvm lvremove -f "$vgdev" ; do
 				sleep 1
 				cnt=$(($cnt-1))
 			done
